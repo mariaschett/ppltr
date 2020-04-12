@@ -1,0 +1,7 @@
+(executable (name main)
+  (modules main)
+  (libraries core ppltr csv)
+  (preprocess (pps ppx_jane ppx_deriving.std))
+  (link_flags -cc g++)
+  (public_name ppltr)
+)

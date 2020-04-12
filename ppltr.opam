@@ -1,0 +1,25 @@
+opam-version: "2.0"
+name: "ppltr"
+version: "1.0"
+synopsis: "A PoPuLaToR for a PeePhoLeopTimizeR of EVM bytecode"
+maintainer: [ "mail@jnagele.net" "mail@maria-a-schett.net" ]
+authors: [ "mail@jnagele.net" "mail@maria-a-schett.net" ]
+license: "Apache-2.0"
+homepage: ""
+dev-repo: ""
+bug-reports: ""
+depends: [
+  "ocaml"
+  "dune"
+  "core"
+  "csv"
+  "zarith"
+  "ounit" {with-test}
+  "ppx_sexp_conv"
+  "ppx_deriving"
+]
+build: [
+  [ "dune" "subst" ] {pinned}
+  [ "dune" "build" "-p" name "-j" jobs ]
+]
+run-test: [make "test"]

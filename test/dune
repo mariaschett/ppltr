@@ -1,0 +1,12 @@
+(executables
+ (names test_blk_generator)
+ (libraries core ppltr oUnit)
+ (preprocess (pps ppx_deriving.std))
+ (link_flags -cc g++)
+)
+
+(alias
+ (name runtest)
+ (deps (:x test_blk_generator.exe))
+ (action (run %{x}))
+)
