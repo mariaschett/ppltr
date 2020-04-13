@@ -9,7 +9,7 @@ let () =
       and blocks_fn = anon ("BLOCKS" %: string)
       in
       fun () ->
-        let peephole_sz = 5 in
+        let peephole_sz = 6 in
         Csv.Rows.load ~has_header:true bytecode_csv
         |> List.map ~f:(fun r -> Csv.Row.find r "bytecode")
         |> Blk_generator.generate_blks peephole_sz
