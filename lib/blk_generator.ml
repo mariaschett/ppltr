@@ -1,6 +1,7 @@
 open Core
 
-let parse_bytecode bc = Sedlexing.Latin1.from_string bc |> Ebso.Parser.parse
+let parse_bytecode bc =
+  Sedlexing.Latin1.from_string bc |> Ebso.Parser.parse ~ignore_data_section:true
 
 let sliding_window xs sz =
   if sz <= 0 then [[]] else
