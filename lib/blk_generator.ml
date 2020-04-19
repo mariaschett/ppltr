@@ -25,9 +25,16 @@ let equiv_mod_wsz b1 b2 =
   in
   Sorg.Program_schema.alpha_equal (abstract_block b1) (abstract_block b2)
 
+let rec insert_block gbs b = match gbs with
+  | [] -> [(b, 1)]
+  | (b', n) :: gbs ->
+    if equiv_mod_wsz b b' then
+      (b', n + 1) :: gbs
+    else
+      (b', n) :: insert_block gbs b
+
 let generate_blks sz bcs =
   let ps = List.map ~f:parse_bytecode bcs in
   let bs = List.concat_map ps ~f:Ebso.Program.split_into_bbs in
   let bbs = List.concat_map bs ~f:(fun b -> split_into_bound_blocks b sz) in
-  List.fold bbs ~init:[]
-    ~f:(fun gbs b -> if List.exists gbs ~f:(equiv_mod_wsz b) then gbs else b :: gbs)
+  List.fold bbs ~init:[] ~f:insert_block

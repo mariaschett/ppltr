@@ -14,8 +14,8 @@ let () =
         Csv.Rows.load ~has_header:true bytecode_csv
         |> List.map ~f:(fun r -> Csv.Row.find r "bytecode")
         |> Blk_generator.generate_blks peephole_sz
-        |> List.map ~f:Ebso.Printer.show_ebso_snippet
-        |> List.cons Ebso.Printer.ebso_snippet_header
+        |> List.rev_map ~f:(fun (p, c) -> Ebso.Printer.show_ebso_snippet p @ [[%show: int] c])
+        |> List.cons (Ebso.Printer.ebso_snippet_header @ ["instances"])
         |> Csv.save blocks_fn
     ]
   |> Command.run ~version:"1.0"
