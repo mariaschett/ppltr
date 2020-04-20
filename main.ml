@@ -26,6 +26,6 @@ let () =
       fun () ->
         match mode with
         | BLOCK_GEN -> Blk_generator.write_blks in_csv out_csv peephole_sz
-        | OPTZ_GEN -> ()
+        | OPTZ_GEN -> Optz_generator.write_optz in_csv out_csv
     ]
   |> Command.run ~version:"1.0"
