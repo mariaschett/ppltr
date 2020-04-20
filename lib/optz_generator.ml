@@ -13,6 +13,8 @@ let in_header =
   ; "translation validation"
   ]
 
+let out_header = ["lhs"; "rhs"]
+
 (* careful, find expects row to be there *)
 let row_to_optimization r =
   let parse s = Parser.parse @@ Sedlexing.Latin1.from_string s in
@@ -29,5 +31,5 @@ let write_optz in_csv out_csv =
   |> List.filter_map ~f:row_to_optimization
   |> List.map ~f:(fun (lhs, rhs) ->
       [Program.show_hex lhs; Program.show_hex rhs])
-  |> List.cons (["lhs"; "rhs"])
+  |> List.cons (out_header)
   |> Csv.save out_csv
