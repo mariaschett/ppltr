@@ -38,3 +38,11 @@ let generate_blks sz bcs =
   let bs = List.concat_map ps ~f:Ebso.Program.split_into_bbs in
   let bbs = List.concat_map bs ~f:(fun b -> split_into_bound_blocks b sz) in
   List.fold bbs ~init:[] ~f:insert_block
+
+let write_blks in_csv out_csv peephole_sz =
+  Csv.Rows.load ~has_header:true in_csv
+  |> List.map ~f:(fun r -> Csv.Row.find r "bytecode")
+  |> generate_blks peephole_sz
+  |> List.rev_map ~f:(fun (p, c) -> Ebso.Printer.show_ebso_snippet p @ [[%show: int] c])
+  |> List.cons (Ebso.Printer.ebso_snippet_header @ ["instances"])
+  |> Csv.save out_csv

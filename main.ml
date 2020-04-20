@@ -21,16 +21,11 @@ let () =
           ~doc:"sz maximal size of the peephole window (default: 6)"
       and mode = flag "mode"
           (required (Arg_type.create mode_of_string))
-          ~doc:"mode BG or OG"      in
+          ~doc:"mode BG or OG"
+      in
       fun () ->
         match mode with
-        | BLOCK_GEN ->
-          Csv.Rows.load ~has_header:true in_csv
-          |> List.map ~f:(fun r -> Csv.Row.find r "bytecode")
-          |> Blk_generator.generate_blks peephole_sz
-          |> List.rev_map ~f:(fun (p, c) -> Ebso.Printer.show_ebso_snippet p @ [[%show: int] c])
-          |> List.cons (Ebso.Printer.ebso_snippet_header @ ["instances"])
-          |> Csv.save out_csv
+        | BLOCK_GEN -> Blk_generator.write_blks in_csv out_csv peephole_sz
         | OPTZ_GEN -> ()
     ]
   |> Command.run ~version:"1.0"
