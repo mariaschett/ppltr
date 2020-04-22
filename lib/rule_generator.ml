@@ -36,17 +36,13 @@ let compute_multiple_optimizations rows =
 
 let timed_out row = let rule = rule row in rule.lhs = []
 
-(* TODO fix subsumes *)
-let subsumes row1 row2 = Rule.is_subrule (rule row1) (rule row2)
-
-let rec insert_non_dup_rule row_to_insert from_rows (to_rows, dups) = match from_rows with
-  | row :: _ when subsumes row row_to_insert -> (from_rows, row :: dups)
-  | row :: from_rows_tail when subsumes row_to_insert row -> insert_non_dup_rule row from_rows_tail (to_rows, row :: dups)
-  | row :: from_rows_tail -> insert_non_dup_rule row_to_insert from_rows_tail (row :: to_rows, dups)
-  | [] -> (row_to_insert :: to_rows, dups)
+let insert_non_dup row_to_insert (rows, dups) =
+  if List.exists rows ~f:(fun row  -> Rule.equal (rule row) (rule row_to_insert))
+  then (rows, row_to_insert :: dups)
+  else (row_to_insert :: rows, dups)
 
 let rm_duplicates =
-  List.fold ~init:([],[]) ~f:(fun (rows, dups) row -> insert_non_dup_rule row rows ([], dups))
+  List.fold ~init:([],[]) ~f:(fun (rows, dups) row -> insert_non_dup row (rows, dups))
 
 let compute_results in_csv =
   let rows = Csv.Rows.load ~has_header:true ~header:Optz_generator.out_header in_csv in
