@@ -68,7 +68,7 @@ let print_stats key rows printer =
 
 let print_dups stats =
   print_stats "duplicate rules were generated"  stats.duplicates
-    (fun row -> Format.printf "%s" (Rule.show (rule row)))
+    (fun row -> Format.printf "%s\n" (Rule.show (rule row)))
 
 let show_optimization row =
   Printf.sprintf "%s >= %s" (Program.show_h (source row)) (Program.show_h (target row))
