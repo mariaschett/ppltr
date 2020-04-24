@@ -31,8 +31,9 @@ let rule row =
   let rhs = parse_row "rule rhs" Program_schema.parse row in
   {lhs = lhs; rhs = rhs}
 
+(* assumes group-able rules are consecutive *)
 let compute_multiple_optimizations rows =
-  List.group ~break:(fun row1 row2 -> source row1 = source row2 && target row1 = target row2) rows
+  List.group ~break:(fun row1 row2 -> not (source row1 = source row2 && target row1 = target row2)) rows
   |> List.filter ~f:(fun group -> List.length group > 1)
 
 let insert_non_dup row_to_insert (rows, dups) =
@@ -73,7 +74,7 @@ let show_optimization row =
   Printf.sprintf "%s >= %s" (Program.show_h (source row)) (Program.show_h (target row))
 
 let print_muls stats =
-  print_stats "optimizations generated multiple rules:" stats.multiples
+  print_stats "optimizations generated multiple rules" stats.multiples
     (fun group ->
        Format.printf "%s" (show_optimization (List.hd_exn group));
        List.iter group ~f:(fun row -> Format.printf "\n  %s" (Rule.show (rule row))))
