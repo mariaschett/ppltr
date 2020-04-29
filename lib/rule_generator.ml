@@ -70,13 +70,25 @@ let write_rules out_csv rules =
   Csv.save out_csv (in_header :: rules')
 
 let print_stats key rows printer =
-  Format.printf "\nThe following %i %s:\n" (List.length rows) key;
+  Format.printf "\nThe following %s:\n" key;
   List.iter rows ~f:printer;
   Format.printf "\n"
 
+let group_duplicates =
+  List.fold ~init:[] ~f:(fun gs d ->
+      let r = rule d in
+      match List.Assoc.find gs ~equal:Rule.equal r with
+      | Some i -> List.Assoc.add gs ~equal:Rule.equal r (i+1)
+      | None -> List.Assoc.add gs ~equal:Rule.equal r 1
+    )
+
 let print_dups stats =
-  print_stats "duplicate rules were generated"  stats.duplicates
-    (fun row -> Format.printf "%s\n" (Rule.show (rule row)))
+  let comp_count (_, c1) (_, c2) = Int.compare c2 c1 in
+  let sorted_grouped_duplicates = List.sort ~compare:comp_count (group_duplicates stats.duplicates) in
+  Format.printf "#single duplicate: %d\n" (List.count sorted_grouped_duplicates ~f:(fun (_, i) -> i = 1));
+  Format.printf "#duplicates >= 15: %d\n" (List.fold sorted_grouped_duplicates ~init:0 ~f:(fun c (_, i) -> if i >= 15 then c + i else c));
+  print_stats "duplicate rules were generated" sorted_grouped_duplicates
+    (fun (r, count) -> Format.printf "%s : %d \n" (Rule.show r) count)
 
 let show_optimization row =
   Printf.sprintf "%s >= %s" (Program.show_h (source row)) (Program.show_h (target row))
