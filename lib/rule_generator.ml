@@ -21,11 +21,16 @@ type stats =
   ; count_final_rules : int
   }
 
-let contains p iota =
-  let equal_incl_push_args i1 i2 = match (i1, i2) with
-    | PUSH x, PUSH y -> x = y
-    | _ -> Instruction.equal i1 i2 in
-  List.mem p iota ~equal:equal_incl_push_args
+let equal_mod i1 i2 = match (i1, i2) with
+  | PUSH _, PUSH _ -> true
+  | SWAP _, SWAP _ -> true
+  | DUP _, DUP _ -> true
+  | _ -> Instruction.equal i1 i2
+
+let contains p iota = List.mem p iota
+    ~equal:(fun i1 i2 -> match i1,i2 with
+        | PUSH (Word w1), PUSH (Word w2) -> w1 = w2
+        | _ -> equal_mod i1 i2)
 
 let parse_row key parse_with row =
   Csv.Row.find row key |> Sedlexing.Latin1.from_string |> parse_with
@@ -40,7 +45,7 @@ let rule row =
   let rhs = parse_row "rule rhs" Program_schema.parse row in
   {lhs = lhs; rhs = rhs}
 
-let gas_saved row = Int.of_string (Csv.Row.find row "gas_saved")
+let gas_saved row = Int.of_string (Csv.Row.find row "gas saved")
 
 (* assumes group-able rules are consecutive *)
 let compute_multiple_optimizations rows =
@@ -74,38 +79,40 @@ let compute_results in_csv =
       count_final_rules = List.length final_rows;
     })
 
-let top_btm sort_by in_csv t b =
-  let rows = Csv.Rows.load ~has_header:true ~header:in_header in_csv in
-  let srtd_rows = List.sort ~compare:sort_by rows in
-  (List.take srtd_rows t, List.take (List.rev (srtd_rows)) b)
+let top_btm sort_by rules t b =
+  let srtd_rows = List.sort ~compare:sort_by rules in
+  let take_continue xs i =
+    let (fst_i, tail) = List.split_n xs i in
+    match List.last fst_i with
+    | None -> []
+    | Some x -> fst_i @ List.take_while tail ~f:(fun y -> sort_by x y = 0)
+  in
+  (take_continue srtd_rows t, take_continue (List.rev (srtd_rows)) b)
 
 let top_btm_gas_saved =
-  top_btm (fun row1 row2 -> Int.compare (gas_saved row1) (gas_saved row2))
+  top_btm (fun row1 row2 -> Int.compare (gas_saved row2) (gas_saved row1))
 
 let top_btm_len_diff =
   let open Rule in
   let len_diff rule = (List.length rule.lhs) - (List.length rule.rhs) in
-  top_btm (fun row1 row2 -> Int.compare (len_diff (rule row1)) (len_diff (rule row2)))
+  top_btm (fun row1 row2 -> Int.compare (len_diff (rule row2)) (len_diff (rule row1)))
 
-let rhs_finds_new in_csv =
-  let open Rule in
-  let rhs_diff rule = not (List.for_all rule.rhs ~f:(contains rule.lhs)) in
-  let rows = Csv.Rows.load ~has_header:true ~header:in_header in_csv in
-  List.filter rows ~f:(fun row -> rhs_diff (rule row))
+let diff_instr l r =
+  let rec rm_fst p f = match p with | [] -> [] | h :: tl when f h -> tl | h :: tl -> h :: (rm_fst tl f) in
+  List.fold l ~init:r ~f:(fun r' iota -> rm_fst r' (equal_mod iota))
 
-let rmvd_instr in_csv =
-  let open Rule in
-  let rmvd_instr m row =
-    let rule  = (rule row) in
-    List.fold rule.lhs ~init:m ~f:(fun m' iota ->
-        if not (contains rule.rhs iota)
-        then
-          Instruction.Map.update m' iota ~f:(Option.value_map ~default:1 ~f:(Int.succ))
-        else m'
-      )
-     in
-  let rows = Csv.Rows.load ~has_header:true ~header:in_header in_csv in
-  List.fold rows ~init:Instruction.Map.empty ~f:rmvd_instr
+let rhs_finds_new rows =
+  List.filter_map rows ~f:(fun row ->
+      let rule = rule row in
+      match diff_instr rule.lhs rule.rhs with
+      | [] -> None
+      | is -> Some ((Program.show_h is) :: Csv.Row.to_list row))
+
+let rmvd_instr rows diff =
+  List.fold rows ~init:Instruction.Map.empty ~f:(
+    fun m row ->
+      List.fold (diff (rule row)) ~init:m ~f:(fun m' iota ->
+          Instruction.Map.update m' iota ~f:(Option.value_map ~default:1 ~f:(Int.succ))))
 
 let write_rules out_csv rules =
   let rules' = List.map ~f:(Csv.Row.to_list) rules in
@@ -123,10 +130,13 @@ let sorted_grouped_duplicates stats =
   let comp_count (_, c1) (_, c2) = Int.compare c2 c1 in
   List.sort ~compare:comp_count (group_duplicates stats.duplicates)
 
+let show_rule row =
+  Printf.sprintf "%s => %s" (Program.show_h (rule row).lhs) (Program.show_h (rule row).rhs)
+
 let show_optimization row =
   Printf.sprintf "%s >= %s" (Program.show_h (source row)) (Program.show_h (target row))
 
-let print_stats stats =
+let print_stats stats rules =
   let write_stats_csv fn rows = Csv.save ("eval/stats/" ^ fn ^ ".csv") rows ~quote_all:true in
 
   Format.printf "# Generated Rules\n";
@@ -157,3 +167,34 @@ let print_stats stats =
        List.iter group ~f:(fun row -> Format.printf "\n  %s" (Rule.show (rule row))));
 
   Format.print_newline ();
+  Format.printf "# Removed Instructions\n";
+  let m = rmvd_instr rules (fun rule -> diff_instr rule.rhs rule.lhs) in
+  Instruction.Map.fold m ~init:() ~f:(fun ~key:iota ~data:count -> fun () -> Format.printf "%s, %d\n" (Instruction.show iota) count);
+
+  Format.print_newline ();
+  let news = rhs_finds_new rules in
+  Format.printf "# Added Instructions\n";
+  let m = rmvd_instr rules (fun rule -> diff_instr rule.lhs rule.rhs) in
+  Instruction.Map.fold m ~init:() ~f:(fun ~key:iota ~data:count -> fun () -> Format.printf "%s, %d\n" (Instruction.show iota) count);
+
+  Format.print_newline ();
+  let tg, bg = top_btm_gas_saved rules 5 1 in
+  Format.printf "# Top 5 Rules for gas saving\n";
+  List.iter tg ~f:(fun r -> Format.printf "\n  %s" (show_rule r));
+  Format.print_newline ();
+  Format.print_newline ();
+  Format.printf "# Bottom 1 Rule for gas saving\n";
+  List.iter bg ~f:(fun r -> Format.printf "\n  %s" (show_rule r));
+
+  Format.print_newline ();
+  Format.print_newline ();
+  let tl, bl = top_btm_len_diff rules 2 1 in
+  Format.printf "# Top 2 Rules for length difference\n";
+  List.iter tl ~f:(fun r -> Format.printf "\n  %s" (show_rule r));
+  Format.print_newline ();
+  Format.print_newline ();
+  Format.printf "# Bottom 1 Rule for length difference\n";
+  List.iter bl ~f:(fun r -> Format.printf "\n  %s" (show_rule r));
+  Format.print_newline ();
+
+  write_stats_csv "rhs_finds_new_rules" (("new" :: in_header) :: news)

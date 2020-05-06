@@ -1,7 +1,9 @@
 open OUnit2
+open Core
 open Ppltr
 open Rule_generator
-open Ebso.Instruction.T
+module Instruction = Ebso.Instruction
+open Instruction.T
 
 let suite =
   "suite" >:::
@@ -41,6 +43,69 @@ let suite =
           (not (contains [PUSH (Word (Const "x"))] (PUSH (Word (Const "y")))))
       );
 
+    "instructions are equal">:: (fun _ ->
+        let p = [ADD; SUB] in
+        assert_equal
+          ~cmp:[%eq: Instruction.t list]
+          ~printer:[%show: Instruction.t list]
+          [] (diff_instr p p)
+      );
+
+    "first instructions are empty">:: (fun _ ->
+        let p = [ADD; SUB] in
+        assert_equal
+          ~cmp:[%eq:Instruction.t list]
+          ~printer:[%show: Instruction.t list]
+          p (diff_instr [] p)
+      );
+
+    "snd instructions are empty">:: (fun _ ->
+        let p = [ADD; SUB] in
+        assert_equal
+          ~cmp:[%eq:Instruction.t list]
+          ~printer:[%show: Instruction.t list]
+          [] (diff_instr p [])
+      );
+
+    "instructions occurs twice">:: (fun _ ->
+        assert_equal
+          ~cmp:[%eq:Instruction.t list]
+          ~printer:[%show: Instruction.t list]
+          [ADD] (diff_instr [ADD] [ADD; ADD])
+      );
+
+    "SWAPs are identified">:: (fun _ ->
+        assert_equal
+          ~cmp:[%eq:Instruction.t list]
+          ~printer:[%show: Instruction.t list]
+          [] (diff_instr [SWAP I] [SWAP II])
+      );
+
+    "DUPs are identified">:: (fun _ ->
+        assert_equal
+          ~cmp:[%eq:Instruction.t list]
+          ~printer:[%show: Instruction.t list]
+          [] (diff_instr [DUP I] [DUP III])
+      );
+
+    "PUSHs are identified">:: (fun _ ->
+        assert_equal
+          ~cmp:[%eq:Instruction.t list]
+          ~printer:[%show: Instruction.t list]
+          [] (diff_instr [PUSH (Word (Val "1"))] [PUSH (Word (Val "2"))])
+      );
+
+    "PUSHs are identified">:: (fun _ ->
+        assert_equal
+          ~cmp:[%eq:Instruction.t list]
+          ~printer:[%show: Instruction.t list]
+          [] (diff_instr [PUSH (Word (Const "x"))] [PUSH (Word (Const "y"))])
+      );
+
+    "SWAPs are identified for multiple SWAPs">:: (fun _ ->
+        let i = diff_instr [SWAP II] [SWAP I; SWAP III] |> List.hd_exn in
+        assert_bool "" (i = SWAP I || i = SWAP III)
+      );
   ]
 
 let () =

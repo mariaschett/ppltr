@@ -32,7 +32,7 @@ let () =
         | RULE_GEN ->
           let (rules, stats) = Rule_generator.compute_results in_csv in
           Rule_generator.write_rules out_csv rules;
-          Rule_generator.print_stats stats;
+          Rule_generator.print_stats stats rules;
 
     ]
   |> Command.run ~version:"1.0"
