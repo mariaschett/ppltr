@@ -1,5 +1,5 @@
 (executables
- (names test_blk_generator test_rewriter)
+ (names test_blk_generator test_rewriter test_rule_generator)
  (libraries core ppltr oUnit)
  (preprocess (pps ppx_deriving.std))
  (link_flags -cc g++)
@@ -14,5 +14,11 @@
 (alias
  (name runtest)
  (deps (:x test_rewriter.exe))
+ (action (run %{x}))
+)
+
+(alias
+ (name runtest)
+ (deps (:x test_rule_generator.exe))
  (action (run %{x}))
 )
