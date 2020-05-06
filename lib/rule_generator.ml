@@ -27,22 +27,22 @@ let equal_mod i1 i2 = match (i1, i2) with
   | DUP _, DUP _ -> true
   | _ -> Instruction.equal i1 i2
 
-let contains p iota = List.mem p iota
-    ~equal:(fun i1 i2 -> match i1,i2 with
-        | PUSH (Word w1), PUSH (Word w2) -> w1 = w2
-        | _ -> equal_mod i1 i2)
+let contains p iota =
+  List.mem p iota ~equal:(fun i1 i2 -> match i1, i2 with
+      | PUSH (Word w1), PUSH (Word w2) -> w1 = w2
+      | _ -> equal_mod i1 i2)
 
-let parse_row key parse_with row =
+let parse_field key parse_with row =
   Csv.Row.find row key |> Sedlexing.Latin1.from_string |> parse_with
 
-let source = parse_row "optimization source" Parser.parse
+let source = parse_field "optimization source" Parser.parse
 
-let target = parse_row "optimization target" Parser.parse
+let target = parse_field "optimization target" Parser.parse
 
 let rule row =
   let open Rule in
-  let lhs = parse_row "rule lhs" Program_schema.parse row in
-  let rhs = parse_row "rule rhs" Program_schema.parse row in
+  let lhs = parse_field "rule lhs" Program_schema.parse row in
+  let rhs = parse_field "rule rhs" Program_schema.parse row in
   {lhs = lhs; rhs = rhs}
 
 let gas_saved row = Int.of_string (Csv.Row.find row "gas saved")
@@ -52,13 +52,12 @@ let compute_multiple_optimizations rows =
   List.group ~break:(fun row1 row2 -> not (source row1 = source row2 && target row1 = target row2)) rows
   |> List.filter ~f:(fun group -> List.length group > 1)
 
-let insert_non_dup row_to_insert (rows, dups) =
-  if List.exists rows ~f:(fun row  -> Rule.equal (rule row) (rule row_to_insert))
+let insert_non_dup (rows, dups) row_to_insert =
+  if List.exists rows ~f:(fun row -> Rule.equal (rule row) (rule row_to_insert))
   then (rows, row_to_insert :: dups)
   else (row_to_insert :: rows, dups)
 
-let rm_duplicates =
-  List.fold ~init:([],[]) ~f:(fun (rows, dups) row -> insert_non_dup row (rows, dups))
+let rm_duplicates = List.fold ~init:([], []) ~f:insert_non_dup
 
 let timed_out row = Csv.Row.find row "rule lhs" = ""
 
@@ -69,15 +68,14 @@ let compute_results in_csv =
   (* remove duplciates *)
   let (final_rows, duplicates) = rm_duplicates rows_without_timeouts in
   (* rows where optimizations gave rise to multiple rules *)
-  let multiples = compute_multiple_optimizations final_rows
-  in
-  (final_rows, {
-      duplicates = duplicates;
-      multiples = multiples;
-      timeouts = timeouts;
-      count_sorg_rules = (List.length rows - List.length timeouts);
-      count_final_rules = List.length final_rows;
-    })
+  let multiples = compute_multiple_optimizations final_rows in
+  (final_rows,
+   { duplicates = duplicates
+   ; multiples = multiples
+   ; timeouts = timeouts
+   ; count_sorg_rules = List.length rows - List.length timeouts
+   ; count_final_rules = List.length final_rows
+   })
 
 let top_btm sort_by rules t b =
   let srtd_rows = List.sort ~compare:sort_by rules in
@@ -87,18 +85,22 @@ let top_btm sort_by rules t b =
     | None -> []
     | Some x -> fst_i @ List.take_while tail ~f:(fun y -> sort_by x y = 0)
   in
-  (take_continue srtd_rows t, take_continue (List.rev (srtd_rows)) b)
+  (take_continue srtd_rows t, take_continue (List.rev srtd_rows) b)
 
 let top_btm_gas_saved =
   top_btm (fun row1 row2 -> Int.compare (gas_saved row2) (gas_saved row1))
 
 let top_btm_len_diff =
   let open Rule in
-  let len_diff rule = (List.length rule.lhs) - (List.length rule.rhs) in
+  let len_diff rule = List.length rule.lhs - List.length rule.rhs in
   top_btm (fun row1 row2 -> Int.compare (len_diff (rule row2)) (len_diff (rule row1)))
 
 let diff_instr l r =
-  let rec rm_fst p f = match p with | [] -> [] | h :: tl when f h -> tl | h :: tl -> h :: (rm_fst tl f) in
+  let rec rm_fst p f = match p with
+    | [] -> []
+    | h :: tl when f h -> tl
+    | h :: tl -> h :: (rm_fst tl f)
+  in
   List.fold l ~init:r ~f:(fun r' iota -> rm_fst r' (equal_mod iota))
 
 let rhs_finds_new rows =
