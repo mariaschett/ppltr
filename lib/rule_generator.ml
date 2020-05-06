@@ -111,7 +111,7 @@ let write_rules out_csv rules =
   let rules' = List.map ~f:(Csv.Row.to_list) rules in
   Csv.save out_csv (in_header :: rules')
 
-let print_stats key rows printer =
+let print_category key rows printer =
   Format.printf "\nThe following %s:\n" key;
   List.iter rows ~f:printer;
   Format.printf "\n"
@@ -129,20 +129,20 @@ let print_dups stats =
   let sorted_grouped_duplicates = List.sort ~compare:comp_count (group_duplicates stats.duplicates) in
   Format.printf "#single duplicate: %d\n" (List.count sorted_grouped_duplicates ~f:(fun (_, i) -> i = 1));
   Format.printf "#duplicates >= 15: %d\n" (List.fold sorted_grouped_duplicates ~init:0 ~f:(fun c (_, i) -> if i >= 15 then c + i else c));
-  print_stats "duplicate rules were generated" sorted_grouped_duplicates
+  print_category "duplicate rules were generated" sorted_grouped_duplicates
     (fun (r, count) -> Format.printf "%s : %d \n" (Rule.show r) count)
 
 let show_optimization row =
   Printf.sprintf "%s >= %s" (Program.show_h (source row)) (Program.show_h (target row))
 
 let print_muls stats =
-  print_stats "optimizations generated multiple rules" stats.multiples
+  print_category "optimizations generated multiple rules" stats.multiples
     (fun group ->
        Format.printf "%s" (show_optimization (List.hd_exn group));
        List.iter group ~f:(fun row -> Format.printf "\n  %s" (Rule.show (rule row))))
 
 let print_timeouts stats =
-  print_stats "optimizations timed out while rule generation" stats.timeouts
+  print_category "optimizations timed out while rule generation" stats.timeouts
   (fun row -> Format.printf "%s@\n" (show_optimization row))
 
 let print_stats stats =
