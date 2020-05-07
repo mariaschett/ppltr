@@ -90,10 +90,10 @@ let top_btm sort_by rules t b =
 let top_btm_gas_saved =
   top_btm (fun row1 row2 -> Int.compare (gas_saved row2) (gas_saved row1))
 
+let len_diff row = List.length (rule row).lhs - List.length (rule row).rhs
+
 let top_btm_len_diff =
-  let open Rule in
-  let len_diff rule = List.length rule.lhs - List.length rule.rhs in
-  top_btm (fun row1 row2 -> Int.compare (len_diff (rule row2)) (len_diff (rule row1)))
+  top_btm (fun row1 row2 -> Int.compare (len_diff row2) (len_diff row1))
 
 let diff_instr l r =
   let rec rm_fst p f = match p with
@@ -181,22 +181,22 @@ let print_stats stats rules =
 
   Format.print_newline ();
   let tg, bg = top_btm_gas_saved rules 5 1 in
-  Format.printf "# Top 5 Rules for gas saving\n";
-  List.iter tg ~f:(fun r -> Format.printf "\n  %s" (show_rule r));
+  Format.printf "# Top Rules for gas saving\n";
+  List.iter tg ~f:(fun r -> Format.printf "\n  %s,%d" (show_rule r) (gas_saved r));
   Format.print_newline ();
   Format.print_newline ();
-  Format.printf "# Bottom 1 Rule for gas saving\n";
-  List.iter bg ~f:(fun r -> Format.printf "\n  %s" (show_rule r));
+  Format.printf "# Bottom Rules for gas saving\n";
+  List.iter bg ~f:(fun r -> Format.printf "\n  %s,%d" (show_rule r) (gas_saved r));
 
   Format.print_newline ();
   Format.print_newline ();
   let tl, bl = top_btm_len_diff rules 2 1 in
-  Format.printf "# Top 2 Rules for length difference\n";
-  List.iter tl ~f:(fun r -> Format.printf "\n  %s" (show_rule r));
+  Format.printf "# Top Rules for length difference\n";
+  List.iter tl ~f:(fun r -> Format.printf "\n  %s,%d" (show_rule r) (len_diff r));
   Format.print_newline ();
   Format.print_newline ();
-  Format.printf "# Bottom 1 Rule for length difference\n";
-  List.iter bl ~f:(fun r -> Format.printf "\n  %s" (show_rule r));
+  Format.printf "# Bottom Rules for length difference\n";
+  List.iter bl ~f:(fun r -> Format.printf "\n  %s,%d" (show_rule r) (len_diff r));
   Format.print_newline ();
 
   write_stats_csv "rhs_finds_new_rules" (("new" :: in_header) :: news)
