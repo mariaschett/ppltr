@@ -138,6 +138,40 @@ let show_rule row =
 let show_optimization row =
   Printf.sprintf "%s >= %s" (Program.show_h (source row)) (Program.show_h (target row))
 
+let show_instruction_maps_grouped m_add m_rem =
+  let groups =
+    [ ("Arith", [ADD; SUB; MUL; ADDMOD; MULMOD; DIV; MOD; SDIV; SMOD]);
+      ("Comp", [LT; GT; EQ; SLT; SGT]);
+      ("ISZERO", [ISZERO]);
+      ("Bitwise", [AND; OR; XOR; NOT]);
+      ("DUP", List.filter Instruction.all
+         ~f:(fun i -> match i with DUP _ -> true | _ -> false));
+      ("SWAP", List.filter Instruction.all
+         ~f:(fun i -> match i with SWAP _ -> true | _ -> false));
+      ("PUSH", [PUSH Tmpl]);
+      ("POP", [POP]);
+      ("EnvInfo",
+       [ ADDRESS ; BALANCE ; ORIGIN ; CALLER ; CALLVALUE ; CALLDATALOAD ; CALLDATASIZE
+       ; CALLDATACOPY ; CODESIZE ; CODECOPY ; GASPRICE ; EXTCODESIZE ; EXTCODECOPY
+       ; RETURNDATASIZE ; RETURNDATACOPY ; TIMESTAMP
+       ]);
+      ("Mem", [MLOAD]);
+    ]
+  in
+  let default_grp =
+    List.filter Instruction.all ~f:(fun i ->
+        not (List.exists groups ~f:(fun (_, g) -> List.mem g i ~equal:Instruction.equal)))
+  in
+  let count_grp g m =
+    List.sum (module Int) g ~f:(fun i -> match Instruction.Map.find m i with
+        | None -> 0
+        | Some c -> c)
+  in
+  Format.printf "\n# Added,Removed Instructions\n";
+  List.iter (groups @ [("other", default_grp)]) ~f:(fun (n, g) ->
+      Format.printf "%s,%d,%d\n" n (count_grp g m_add) (count_grp g m_rem))
+
+
 let print_stats stats rules =
   let write_stats_csv fn rows = Csv.save ("eval/stats/" ^ fn ^ ".csv") rows ~quote_all:true in
 
@@ -169,15 +203,9 @@ let print_stats stats rules =
        List.iter group ~f:(fun row -> Format.printf "\n  %s" (Rule.show (rule row))));
 
   Format.print_newline ();
-  Format.printf "# Removed Instructions\n";
-  let m = rmvd_instr rules (fun rule -> diff_instr rule.rhs rule.lhs) in
-  Instruction.Map.fold m ~init:() ~f:(fun ~key:iota ~data:count -> fun () -> Format.printf "%s, %d\n" (Instruction.show iota) count);
-
-  Format.print_newline ();
-  let news = rhs_finds_new rules in
-  Format.printf "# Added Instructions\n";
-  let m = rmvd_instr rules (fun rule -> diff_instr rule.lhs rule.rhs) in
-  Instruction.Map.fold m ~init:() ~f:(fun ~key:iota ~data:count -> fun () -> Format.printf "%s, %d\n" (Instruction.show iota) count);
+  let m_rem = rmvd_instr rules (fun rule -> diff_instr rule.rhs rule.lhs) in
+  let m_add = rmvd_instr rules (fun rule -> diff_instr rule.lhs rule.rhs) in
+  show_instruction_maps_grouped m_add m_rem;
 
   Format.print_newline ();
   let tg, bg = top_btm_gas_saved rules 5 1 in
@@ -199,4 +227,5 @@ let print_stats stats rules =
   List.iter bl ~f:(fun r -> Format.printf "\n  %s,%d" (show_rule r) (len_diff r));
   Format.print_newline ();
 
+  let news = rhs_finds_new rules in
   write_stats_csv "rhs_finds_new_rules" (("new" :: in_header) :: news)
