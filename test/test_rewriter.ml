@@ -90,6 +90,24 @@ let suite =
              {lhs = [NUMBER; DUP I]; rhs = [NUMBER; NUMBER]})
       );
 
+    "test normal forms, multiple reducts" >:: (fun _ ->
+        assert_equal
+          ~cmp:[%eq: (Program.t) list]
+          ~printer:[%show: (Program.t) list]
+          [[NUMBER; NUMBER; SUB; NUMBER; NUMBER]]
+          (normal_forms [NUMBER; DUP I; SUB; NUMBER; DUP I]
+             [{lhs = [NUMBER; DUP I]; rhs = [NUMBER; NUMBER]}])
+      );
+
+    "test normal forms, no reducts" >:: (fun _ ->
+        assert_equal
+          ~cmp:[%eq: (Program.t) list]
+          ~printer:[%show: (Program.t) list]
+          [[NUMBER; SUB]]
+          (normal_forms [NUMBER; SUB]
+             [{lhs = [NUMBER; DUP I]; rhs = [NUMBER; NUMBER]}])
+      );
+
   ]
 
 let () =

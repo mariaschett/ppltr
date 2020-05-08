@@ -20,3 +20,24 @@ let reducts_for_rule p r =
   List.filter_map (contexts_for_rule p r) ~f:try_rewrite_with_ctxt
 
 let reducts p rs = List.concat_map rs ~f:(reducts_for_rule p)
+
+let normal_forms p rs =
+  let rec dedup = function
+    | [] -> []
+    | p :: ps ->
+      if List.mem ps p ~equal:Program_schema.equal
+      then dedup ps
+      else  p :: dedup ps
+  in
+  let nf_or_reducts p = match reducts p rs with
+    | [] -> `Fst p
+    | ps -> `Snd ps
+  in
+  let rec normal_forms nfs ps =
+    let nfs', ps' = List.partition_map ps ~f:(nf_or_reducts) in
+    let ps = List.concat ps' in
+    let nfs = nfs' @ nfs in
+    if List.is_empty ps then nfs else normal_forms nfs ps
+  in dedup (normal_forms [] [p])
+
+let is_normal_form p rs = List.is_empty (reducts p rs)
