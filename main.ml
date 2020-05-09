@@ -6,6 +6,8 @@ type mode =
   | WINDOW_GEN
   | OPTZ_GEN
   | RULE_GEN
+  | BLOCK_RW
+  | RULE_RW
 [@@deriving show { with_path = false }]
 
 let mode_of_string = function
@@ -13,6 +15,8 @@ let mode_of_string = function
   | "WG" -> WINDOW_GEN
   | "OG" -> OPTZ_GEN
   | "RG" -> RULE_GEN
+  | "BR" -> BLOCK_RW
+  | "RR" -> RULE_RW
   | _ -> failwith "Unknown mode"
 
 let () =
@@ -21,11 +25,15 @@ let () =
     [%map_open
       let in_csv = anon ("INPUT" %: string)
       and out_csv = anon ("OUTPUT" %: string)
+      and rules = flag "rules" (optional string)
+          ~doc:"csv file containing rules for rewriting (use with mode BR/RR)"
+      and out_rew_only = flag "out-rewritten-only" no_arg
+          ~doc:"only output rows that were rewritten (use with mode BR/RR)"
       and peephole_sz = flag "peephole-size" (optional_with_default 6 int)
           ~doc:"sz maximal size of the peephole window (default: 6)"
       and mode = flag "mode"
           (required (Arg_type.create mode_of_string))
-          ~doc:"mode BG or WG or OG or RG"
+          ~doc:"mode BG or WG or OG or RG or BR or RR"
       in
       fun () ->
         match mode with
@@ -35,7 +43,12 @@ let () =
         | RULE_GEN ->
           let (rules, stats) = Rule_generator.compute_results in_csv in
           Rule_generator.write_rules out_csv rules;
-          Rule_generator.print_stats stats rules;
-
+          Rule_generator.print_stats stats rules
+        | BLOCK_RW ->
+          let rules = Option.value_exn ~message:"No rules given for rewriting" rules in
+          Rewriter.process_blocks in_csv rules out_csv out_rew_only
+        | RULE_RW ->
+          let rules = Option.value_exn ~message:"No rules given for rewriting" rules in
+          Rewriter.process_rules in_csv rules out_csv out_rew_only
     ]
   |> Command.run ~version:"1.0"

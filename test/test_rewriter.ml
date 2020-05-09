@@ -95,7 +95,7 @@ let suite =
           ~cmp:[%eq: (Program.t) list]
           ~printer:[%show: (Program.t) list]
           [[NUMBER; NUMBER; SUB; NUMBER; NUMBER]]
-          (normal_forms [NUMBER; DUP I; SUB; NUMBER; DUP I]
+          (normal_forms all_reducts [NUMBER; DUP I; SUB; NUMBER; DUP I]
              [{lhs = [NUMBER; DUP I]; rhs = [NUMBER; NUMBER]}])
       );
 
@@ -104,7 +104,7 @@ let suite =
           ~cmp:[%eq: (Program.t) list]
           ~printer:[%show: (Program.t) list]
           [[NUMBER; SUB]]
-          (normal_forms [NUMBER; SUB]
+          (normal_forms all_reducts [NUMBER; SUB]
              [{lhs = [NUMBER; DUP I]; rhs = [NUMBER; NUMBER]}])
       );
 
