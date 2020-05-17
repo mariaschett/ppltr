@@ -1,4 +1,4 @@
-![ebso](doc/logo/logo.svg?sanitize=true)
+![ppltr](docs/logo/logo.svg?sanitize=true)
 
 # A PoPuLaToR for a PeePhoLe opTimizeR
 
