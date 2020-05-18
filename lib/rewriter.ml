@@ -44,14 +44,15 @@ let is_normal_form p rs = List.is_empty (all_reducts p rs)
 
 let one_reduct p rs = Option.to_list (List.hd (all_reducts p rs))
 
-let count_reducts p rs =
-  let add count r c' =
-    List.Assoc.add count r c' ~equal:Rule.equal
-  in
-  List.fold rs ~init:[] ~f:(fun count r ->
-      match List.length (reducts_for_rule p r) with
-      | 0 -> count
-      | c -> add count r c)
+
+let count_reducts ps rs =
+  let module M = Map.Make_plain(Rule) in
+  List.fold ps ~init:M.empty ~f:(fun m p ->
+      List.fold rs ~init:m ~f:(fun m r ->
+          match List.length (reducts_for_rule p r) with
+          | 0 -> m
+          | c -> M.update m r ~f:(fun c' -> Option.value c' ~default:0 + c)))
+  |> M.to_alist
 
 let print_counts counts =
   let update count r c' =
@@ -67,13 +68,18 @@ let print_counts counts =
   |> List.sort ~compare:(Tuple.T2.compare ~cmp1:Int.compare ~cmp2:Rule.compare)
   |> List.iter ~f:(fun (c, r) -> Format.printf "%d, %s\n" c (Rule.show r))
 
-let rewrite_row row_to_p p_to_row rs out_rew_only row =
-  let b = row_to_p row in
-  match normal_forms one_reduct b rs with
-  | [b'] when Program_schema.equal b b' && out_rew_only -> []
-  | nfs -> List.map nfs ~f:(p_to_row row)
+let rewrite_row row_to_ps ps_to_rows rs out_rew_only row =
+  let rewrite_block b =
+    match normal_forms one_reduct b rs with
+    | [] -> None
+    | b' :: _ when Program_schema.equal b b' && out_rew_only -> None
+    | b' :: _ -> Some b'
+  in
+  row_to_ps row
+  |> List.filter_map ~f:rewrite_block
+  |> ps_to_rows row
 
-let process_csv row_to_p p_to_row in_csv rule_csv out_csv out_rew_only =
+let process_csv ?(hdr=None) row_to_ps ps_to_rows in_csv rule_csv out_csv out_rew_only =
   let rs = Csv.Rows.load ~has_header:true rule_csv in
   let rs = List.map rs ~f:Rule_generator.rule in
   let in_csv = Csv.of_channel ~has_header:true (In_channel.create in_csv) in
@@ -81,22 +87,50 @@ let process_csv row_to_p p_to_row in_csv rule_csv out_csv out_rew_only =
   let lenbs = List.length bs in
   let (rbs, counts) = List.foldi bs ~init:([], []) ~f:(fun i (csv, counts) r ->
       Out_channel.print_endline ("Processing row " ^ (Int.to_string i) ^ " of " ^ (Int.to_string lenbs));
-      let rr = rewrite_row row_to_p p_to_row rs out_rew_only r in
-      let count = count_reducts (row_to_p r) rs in
+      let rr = rewrite_row row_to_ps ps_to_rows rs out_rew_only r in
+      let count = count_reducts (row_to_ps r) rs in
       (csv @ rr, count :: counts))
   in
+  let hdr = Option.value hdr ~default:(Csv.Rows.header in_csv) in
   print_counts counts;
-  Csv.save out_csv (Csv.Rows.header in_csv :: rbs)
+  Csv.save out_csv (hdr :: rbs)
 
 let process_blocks =
   process_csv
-    (fun r -> Blk_generator.parse_bytecode (Csv.Row.find r "source bytecode"))
-    (fun _ p -> Ebso.Printer.show_ebso_snippet p)
+    (fun r -> [Blk_generator.parse_bytecode (Csv.Row.find r "source bytecode")])
+    (fun _ ps -> List.map ~f:Ebso.Printer.show_ebso_snippet ps)
 
 let process_rules =
-  let mk_rule row rhs =
-    let rule = { lhs = (Rule_generator.rule row).lhs ; rhs = rhs } in
-    Sorg.Rule.show_csv (Rule_generator.source row) (Rule_generator.target row) rule
+  let mk_rule row rhss =
+    let rule rhs = { lhs = (Rule_generator.rule row).lhs ; rhs = rhs } in
+    List.map rhss ~f:(fun rhs ->
+        Sorg.Rule.show_csv (Rule_generator.source row) (Rule_generator.target row) (rule rhs))
   in
-  process_csv (fun row -> (Rule_generator.rule row).rhs)
+  process_csv (fun row -> [(Rule_generator.rule row).rhs])
     mk_rule
+
+let process_contracts =
+  let mk_contract row reducts =
+    let tgt = List.concat reducts in
+    let src = Blk_generator.parse_bytecode (Csv.Row.find row "bytecode") in
+    let src_gas = Ebso.Gas_cost.to_int (Ebso.Program.total_gas_cost src) in
+    let tgt_gas = Ebso.Gas_cost.to_int (Ebso.Program.total_gas_cost tgt) in
+    let saved = src_gas - tgt_gas in
+    let tx_count = Int.of_string (Csv.Row.find row "tx_count") in
+    let src_len = List.length src in
+    [[ Csv.Row.find row "address"
+     ; Int.to_string tx_count
+     ; Int.to_string saved
+     ; Int.to_string (saved * tx_count)
+     ; Int.to_string src_len
+     ; Int.to_string (src_len - List.length tgt)
+    ]]
+  in
+  process_csv
+    ~hdr:(Some ["address"; "tx_count"; "gas_saved_per_tx";
+                "gas_saved_total"; "instrs_src"; "instrs_saved"])
+    (fun r ->
+       Blk_generator.parse_bytecode (Csv.Row.find r "bytecode")
+       |> Ebso.Program.split_into_bbs
+       |> List.map ~f:(fun bb -> Ebso.Program.concat_bbs [bb]))
+    mk_contract
