@@ -39,7 +39,7 @@ let get_rules rs = Option.value_exn ~message:"No rules given for rewriting" rs
 
 let () =
   let open Command.Let_syntax in
-  Command.basic ~summary:"ppltr: A PoPuLaToR for a PeePhoLeopTimizeR of EVM bytecode"
+  Command.basic ~summary:"ppltr: A PoPuLaToR for a PeePhoLe opTimizeR of EVM bytecode"
     [%map_open
       let in_csv = anon ("INPUT" %: string)
       and out_csv = anon ("OUTPUT" %: string)
