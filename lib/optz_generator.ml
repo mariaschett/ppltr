@@ -15,7 +15,7 @@ let in_header =
 
 let out_header = ["lhs"; "rhs"]
 
-(* careful, find expects row to be there *)
+(* careful, find expects column to be there *)
 let row_to_optimization r =
   let parse s = Parser.parse @@ Sedlexing.Latin1.from_string s in
   let sbc = Csv.Row.find r "source bytecode"
