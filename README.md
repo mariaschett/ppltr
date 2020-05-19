@@ -42,3 +42,6 @@
    * __call__: `ppltr -mode RR eval/16-rules.csv eval/17-reduced-rules.csv -rules eval/16-rules.csv`
    
 8. final rules: [`17-reduced-rules.csv`](eval/17-reduced-rules.csv)
+
+9. to apply [`17-reduced-rules.csv`](eval/17-reduced-rules.csv) on [`01-contracts.csv`](eval/01-contracts.csv)
+	* __call__: `ppltr -mode CR eval/01-contracts.csv eval/19-reduced.csv -rules eval/17-reduced-rules.csv`
