@@ -2,6 +2,12 @@
 
 # A PoPuLaToR for a PeePhoLe opTimizeR
 
+## Installation and Running
+
+The easiest way to install `ppltr` is using [opam](https://opam.ocaml.org/).
+Simply run `opam install .` after cloning the repository.
+Afterwards one can run `ppltr -help` for help.
+
 ## Evaluation
 
 1. generate `ebso` blocks from [`01-contracts.csv`](eval/01-contracts.csv)
