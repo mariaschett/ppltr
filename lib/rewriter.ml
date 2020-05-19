@@ -44,7 +44,6 @@ let is_normal_form p rs = List.is_empty (all_reducts p rs)
 
 let one_reduct p rs = Option.to_list (List.hd (all_reducts p rs))
 
-
 let count_reducts ps rs =
   let module M = Map.Make_plain(Rule) in
   List.fold ps ~init:M.empty ~f:(fun m p ->
