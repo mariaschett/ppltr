@@ -2,18 +2,19 @@ opam-version: "2.0"
 name: "ppltr"
 version: "1.0"
 synopsis: "A PoPuLaToR for a PeePhoLeopTimizeR of EVM bytecode"
-maintainer: [ "mail@jnagele.net" "mail@maria-a-schett.net" ]
-authors: [ "mail@jnagele.net" "mail@maria-a-schett.net" ]
+maintainer: [ "mail@maria-a-schett.net" "mail@jnagele.net" ]
+authors: [ "mail@maria-a-schett.net" "mail@jnagele.net" ]
 license: "Apache-2.0"
-homepage: ""
-dev-repo: ""
-bug-reports: ""
+homepage: "https://github.com/mariaschett/ppltr"
+dev-repo: "git+https://github.com:mariaschett/ppltr.git"
+bug-reports: "https://github.com/mariaschett/ppltr/issues"
 depends: [
   "ocaml"
   "dune"
   "core"
+  "ebso" {= "2.1"}
+  "sorg" {= "1.1"}
   "csv"
-  "zarith"
   "ounit" {with-test}
   "ppx_sexp_conv"
   "ppx_deriving"
