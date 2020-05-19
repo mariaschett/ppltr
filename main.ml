@@ -35,6 +35,8 @@ let () =
           ~doc:"only output rows that were rewritten (use with mode BR/RR/CR)"
       and peephole_sz = flag "peephole-size" (optional_with_default 6 int)
           ~doc:"sz maximal size of the peephole window (default: 6)"
+      and stats_dir = flag "dir" (optional_with_default "" string)
+          ~doc:"dir directory to write the stats files (ending with /)"
       and mode = flag "mode"
           (required (Arg_type.create mode_of_string))
           ~doc:"mode: BG .. Generate ebso Blocks\n
@@ -53,7 +55,7 @@ let () =
         | RULE_GEN ->
           let (rules, stats) = Rule_generator.compute_results in_csv in
           Rule_generator.write_rules out_csv rules;
-          Rule_generator.print_stats stats rules
+          Rule_generator.print_stats stats rules stats_dir
         | BLOCK_RW ->
           Rewriter.process_blocks in_csv (get_rules rules) out_csv out_rew_only
         | RULE_RW ->
