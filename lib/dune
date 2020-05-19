@@ -1,5 +1,5 @@
 (library (name ppltr)
- (libraries core ebso sorg sedlex csv)
+ (libraries ebso sorg csv)
  (preprocess (pps ppx_sexp_conv ppx_deriving.std ppx_compare))
  (public_name ppltr)
 )

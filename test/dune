@@ -1,6 +1,6 @@
 (executables
  (names test_blk_generator test_rewriter test_rule_generator)
- (libraries core ppltr oUnit)
+ (libraries ppltr oUnit)
  (preprocess (pps ppx_deriving.std))
  (link_flags -cc g++)
 )
