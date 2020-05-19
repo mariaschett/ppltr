@@ -1,6 +1,6 @@
 ![ppltr](docs/logo/logo.svg?sanitize=true)
 
-# A PoPuLaToR for a PeePhoLe opTimizeR
+# A Populator for a Peephole optimizer
 
 ## Installation and Running
 
