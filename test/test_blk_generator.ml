@@ -63,7 +63,6 @@ let suite =
         assert_bool "900 900 and 299 3 identified"
           (not (equiv_mod_wsz b1 b2))
       );
-
   ]
 
 let () =
