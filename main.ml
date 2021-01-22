@@ -24,6 +24,7 @@ type mode =
   | RULE_RW
   | CONTRACT_RW
   | EQUV_ENC
+  | DEEP_SEAC
 [@@deriving show { with_path = false }]
 
 let mode_of_string = function
@@ -35,6 +36,7 @@ let mode_of_string = function
   | "RR" -> RULE_RW
   | "CR" -> CONTRACT_RW
   | "EQ" -> EQUV_ENC
+  | "DC" -> DEEP_SEAC
   | _ -> failwith "Unknown mode"
 
 let get_rules rs = Option.value_exn ~message:"No rules given for rewriting" rs
@@ -62,7 +64,8 @@ let () =
                  BR .. Rewrite Blocks\n
                  RR .. Rewrite Right-hand sides of rules\n
                  CR .. Rewrite Contracts and gather statistics\n
-                 EQ .. generate Encodings for Equvivalence of lhs and rhs of rules\n"
+                 EQ .. generate Encodings for Equvivalence of lhs and rhs of rules\n
+                 DC .. generate templates for proving rules correct in the DeepSea Compiler Backend\n"
       in
       fun () ->
         match mode with
@@ -80,5 +83,6 @@ let () =
         | CONTRACT_RW ->
           Rewriter.process_contracts in_csv (get_rules rules) out_csv out_rew_only
         | EQUV_ENC -> Eq_enc_generator.write_equiv_encodings in_csv dir
+        | DEEP_SEAC -> Dsc_proofs.write_templates (get_rules rules) dir
     ]
   |> Command.run ~version:"1.1"
