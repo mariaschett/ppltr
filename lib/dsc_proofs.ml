@@ -86,6 +86,16 @@ let generate rn r =
     |> String.concat ~sep:"\n"
 
 
+let skip_rule r =
+  let instr = Ebso.Instruction.T.ISZERO in
+  List.mem (r.lhs) instr ~equal:(=) ||  (* ([%eq: Ebso.Instruction.T]) *)
+  List.mem (r.rhs) instr ~equal:(=)
+
+let check_and_generate n r =
+  if skip_rule r
+  then ""
+  else generate n r
+
 let header =
   "Require Import Statements.StmtExpressionless.
 Require Import backend.phase.Expressionless.Semantics.
@@ -133,5 +143,5 @@ let write_templates rule_csv fn =
   let rs = Csv.Rows.load ~has_header:true rule_csv in
   let rs = List.map rs ~f:Rule_generator.rule in
   let data = List.foldi ~f:(fun i s r ->
-      s ^ generate ("rule" ^ [%show: int] (i+5)) r) ~init:"" rs in
+      s ^ check_and_generate ("rule" ^ [%show: int] (i+5)) r) ~init:"" rs in
   Out_channel.write_all (fn ^ "Rules.v") ~data:(header^push_eq^data)
