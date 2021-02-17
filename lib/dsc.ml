@@ -19,7 +19,7 @@ open Word
 open Instruction.T
 
 let val_to_int256 v =
-  let n =  Z.of_string v in
+  let n = Z.of_string v in
   let s = if Z.equal n (Z.of_string "0")
     then "Vint Int256.zero"
     else if Z.equal n (Z.of_string "1")
@@ -30,11 +30,10 @@ let val_to_int256 v =
 
 let to_var_for_int vnm v =
   let i = val_to_int256 v in
+  let x = "n" ^ (Z.format "d" (Z.of_string v)) in
   match vnm with
   | None -> i
-  | Some vnm -> let x = "n" ^ v in
-    Hashtbl.set vnm ~key:x ~data:[i];
-    x
+  | Some vnm -> Hashtbl.set vnm ~key:x ~data:[i]; x
 
 let to_distinct_variables vnm c =  match vnm with
   | Some vn ->
