@@ -63,7 +63,7 @@ let instr_to_dsc vnm = function
   | GT -> "Sbinop Ogt false"
   | SLT -> "Sslt"
   | SGT -> "Ssgt"
-  | EQ -> "Seq"
+  | EQ -> "Sbinop Oeq false"
   | ISZERO -> "Siszero"
   | AND -> "Sbinop Oand false"
   | OR -> "Sbinop Oor false"
