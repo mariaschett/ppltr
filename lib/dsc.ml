@@ -24,8 +24,17 @@ let val_to_int256 v =
     then "Vint Int256.zero"
     else if Z.equal n (Z.of_string "1")
     then "Vint Int256.one"
-    else  Z.format "d" n in
+    else "Vint (Int256.repr " ^ (Z.format "d" n) ^ ")"
+  in
   "(inl (" ^ s ^ "))"
+
+let to_var_for_int vnm v =
+  let i = val_to_int256 v in
+  match vnm with
+  | None -> i
+  | Some vnm -> let x = "n" ^ v in
+    Hashtbl.set vnm ~key:x ~data:[i];
+    x
 
 let to_distinct_variables vnm c =  match vnm with
   | Some vn ->
@@ -101,7 +110,7 @@ let instr_to_dsc vnm = function
   | GAS -> "Sgas"
   | JUMPDEST -> "Sjumpdest"
   (* different cases for push args *)
-  | PUSH (Word (Val v)) -> "Spush " ^ val_to_int256 v
+  | PUSH (Word (Val v)) -> "Spush " ^ to_var_for_int vnm v
   | PUSH (Word (Const c)) -> "Spush " ^ to_distinct_variables vnm c
   | PUSH x -> "Spush " ^  Pusharg.show x
   (* index for DUP/SWAP starts at 0 for DeepSea Compiler *)
