@@ -50,9 +50,9 @@ let to_distinct_variables vnm c =  match vnm with
 let instr_to_dsc vnm = function
   | STOP -> "Sstop"
   | ADD -> "Sbinop Oadd false"
-  | MUL -> "Smul"
+  | MUL -> "Sbinop Omul false"
   | SUB -> "Sbinop Osub false"
-  | DIV -> "Sdiv"
+  | DIV -> "Sbinop Odiv false"
   | SDIV -> "Sdiv"
   | MOD -> "Smod"
   | SMOD -> "Ssmod"
