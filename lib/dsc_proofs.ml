@@ -53,7 +53,8 @@ let generate_definition rn lhs rhs vn nn  =
   ]
   |> String.concat ~sep:"\n"
 
-let generate_inversion_proof rn inv_lhs lhs vars =
+let generate_inversion_proof rn inv_lhs lhs vars nns =
+  let destructs = List.map ~f:(fun eq -> "    destruct (" ^ eq ^ "); try congruence.") nns in
   [
     "Lemma " ^ rn ^ "_inversion : forall p po,";
     " " ^ rn ^ " p = Some po -> exists tl " ^ String.concat vars ~sep:" " ^ ",";
@@ -66,6 +67,8 @@ let generate_inversion_proof rn inv_lhs lhs vars =
     "    | " ^ lhs ^ " :: tl => _";
     "    | _ => _";
     "    end); simpl; intros; try congruence.";
+  ] @ destructs @ [
+    "    subst.";
     "    repeat eexists.";
     "Qed."
   ]
@@ -81,13 +84,17 @@ let generate rn r =
      the integers *)
   let inv_vn = Hashtbl.create (module String) in
   let inv_lhs = to_dsc (Some inv_vn) None r.lhs in
+  (* also super-ugly, rely on deternism of construction again to get
+     same order of variables as we got in producing them in
+     generate_matching_rhs *)
+  let eqs_nn = list_eq_constr nn in
   [
-      "(* " ^ rn  ^ ": " ^ Rule.show r ^ " *)" ;
-      generate_definition rn lhs rhs vn nn;
-      generate_inversion_proof rn inv_lhs lhs (Hashtbl.data vn |> List.concat) ;
-      "\n";
-    ]
-    |> String.concat ~sep:"\n"
+    "(* " ^ rn  ^ ": " ^ Rule.show r ^ " *)" ;
+    generate_definition rn lhs rhs vn nn;
+    generate_inversion_proof rn inv_lhs lhs (Hashtbl.data vn |> List.concat) eqs_nn;
+    "\n";
+  ]
+  |> String.concat ~sep:"\n"
 
 
 let skip_rule r =
