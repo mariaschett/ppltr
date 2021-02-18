@@ -28,12 +28,19 @@ let val_to_int256 v =
   in
   "(inl (" ^ s ^ "))"
 
+let nxt_free_var vnm v =
+  let x = "n" ^ (Z.format "d" (Z.of_string v)) in
+  let with_idx idx = x ^ "_" ^ ([%show: int] idx) in
+  let rec nxt_free_idx idx =
+    if Hashtbl.mem vnm (with_idx idx) then nxt_free_idx (idx + 1) else idx
+  in
+  if Hashtbl.mem vnm x then (with_idx (nxt_free_idx 1)) else x
+
 let to_var_for_int vnm v =
   let i = val_to_int256 v in
-  let x = "n" ^ (Z.format "d" (Z.of_string v)) in
   match vnm with
   | None -> i
-  | Some vnm -> Hashtbl.set vnm ~key:x ~data:[i]; x
+  | Some vnm -> let x = nxt_free_var vnm v in Hashtbl.set vnm ~key:x ~data:[i]; x
 
 let to_distinct_variables vnm c =  match vnm with
   | Some vn ->
