@@ -46,7 +46,7 @@ let to_distinct_variables vnm c =  match vnm with
           Hashtbl.set vn ~key:c ~data:[c]; c)
   | None -> c
 
-let instr_to_dsc vnm = function
+let instr_to_dsc vn nn = function
   | STOP -> "Sstop"
   | ADD -> "Sbinop Oadd false"
   | MUL -> "Sbinop Omul false"
@@ -109,8 +109,8 @@ let instr_to_dsc vnm = function
   | GAS -> "Sgas"
   | JUMPDEST -> "Sjumpdest"
   (* different cases for push args *)
-  | PUSH (Word (Val v)) -> "Spush " ^ to_var_for_int vnm v
-  | PUSH (Word (Const c)) -> "Spush " ^ to_distinct_variables vnm c
+  | PUSH (Word (Val v)) -> "Spush " ^ to_var_for_int nn v
+  | PUSH (Word (Const c)) -> "Spush " ^ to_distinct_variables vn c
   | PUSH x -> "Spush " ^  Pusharg.show x
   (* index for DUP/SWAP starts at 0 for DeepSea Compiler *)
   | DUP idx -> "Sdup " ^  [%show: int] ((Instruction.idx_to_enum idx) - 1)
@@ -141,6 +141,6 @@ let instr_to_dsc vnm = function
   | INVALID -> "Sinvalid"
   | SELFDESTRUCT -> "Sselfdestruct"
 
-let to_dsc vn t =
-  List.map ~f:(instr_to_dsc vn) t
+let to_dsc vn nn t =
+  List.map ~f:(instr_to_dsc vn nn) t
   |> String.concat ~sep:" :: "

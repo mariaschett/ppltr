@@ -31,35 +31,33 @@ let list_eq_constr vn =
     ~f:(fun ~key:v ~data:vs eq_const ->
       (list_eq_constr_for_v v vs) @ eq_const)
 
-let generate_eq_constraints vn =
-  match list_eq_constr vn with
-  | [] -> None
-  | es -> Some (String.concat ~sep:" and " es)
+let generate_eq_constraints vn nn =
+  let eqs_nn = list_eq_constr nn and eqs_vn = list_eq_constr vn in
+  List.fold (eqs_nn @ eqs_vn) ~init:("","") ~f:(fun (pre, post) e ->
+      ((pre ^ "    if " ^ e ^ "\n    then ", "\n    else None\n" ^ post)))
 
-let generate_matching_rhs rhs vn =
+let generate_matching_rhs rhs vn nn =
   (* do not add :: for empty program *)
   let match_rhs = if String.equal rhs "" then rhs else rhs ^ " :: " in
   let rhs =  "Some (" ^ match_rhs ^ " tl)" in
-  match generate_eq_constraints vn with
-  | None -> rhs
-  | Some eqs -> "    if " ^ eqs ^ "\n    then " ^ rhs ^ "\n    else None\n"
+  let (pre, post) = generate_eq_constraints vn nn in (pre ^ rhs ^ post)
 
-let generate_definition rn lhs rhs vn  =
-      [
-        "Definition " ^ rn ^ " (p : list statement) : option (list statement) :=";
-        "  match p with";
-        "  | " ^ lhs ^ " :: tl =>";
-        generate_matching_rhs rhs vn;
-        "  | _ => None";
-        "  end.";
-      ]
-      |> String.concat ~sep:"\n"
+let generate_definition rn lhs rhs vn nn  =
+  [
+    "Definition " ^ rn ^ " (p : list statement) : option (list statement) :=";
+    "  match p with";
+    "  | " ^ lhs ^ " :: tl =>";
+    generate_matching_rhs rhs vn nn;
+      "  | _ => None";
+    "  end.";
+  ]
+  |> String.concat ~sep:"\n"
 
-let generate_inversion_proof rn lhs vars =
+let generate_inversion_proof rn inv_lhs lhs vars =
   [
     "Lemma " ^ rn ^ "_inversion : forall p po,";
     " " ^ rn ^ " p = Some po -> exists tl " ^ String.concat vars ~sep:" " ^ ",";
-    " p = " ^ lhs ^ ":: tl.";
+    " p = " ^ inv_lhs ^ ":: tl.";
     "Proof.";
     "  intros.";
     "  unfold " ^ rn ^ " in H.";
@@ -75,12 +73,18 @@ let generate_inversion_proof rn lhs vars =
 
 let generate rn r =
   let vn = Hashtbl.create (module String) in
-  let lhs = to_dsc (Some vn) r.lhs in
-  let rhs = to_dsc None r.rhs in
+  let nn = Hashtbl.create (module String) in
+  let lhs = to_dsc (Some vn) (Some nn) r.lhs in
+  let rhs = to_dsc None None r.rhs in
+  (* super-ugly, build map for variable renmaing again and rely on
+     determinism of construction to have variables replaced, but not
+     the integers *)
+  let inv_vn = Hashtbl.create (module String) in
+  let inv_lhs = to_dsc (Some inv_vn) None r.lhs in
   [
       "(* " ^ rn  ^ ": " ^ Rule.show r ^ " *)" ;
-      generate_definition rn lhs rhs vn;
-      generate_inversion_proof rn lhs (Hashtbl.data vn |> List.concat) ;
+      generate_definition rn lhs rhs vn nn;
+      generate_inversion_proof rn inv_lhs lhs (Hashtbl.data vn |> List.concat) ;
       "\n";
     ]
     |> String.concat ~sep:"\n"
