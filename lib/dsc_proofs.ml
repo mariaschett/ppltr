@@ -108,6 +108,9 @@ let skip_rule r =
   ; Ebso.Instruction.T.MULMOD
   ; Ebso.Instruction.T.GAS
   ; Ebso.Instruction.T.EXTCODESIZE
+  ; Ebso.Instruction.T.BALANCE
+  ; Ebso.Instruction.T.RETURNDATASIZE
+  ; Ebso.Instruction.T.BYTE
   ]
   in
   List.exists instrs ~f:(fun instr -> List.mem (r.lhs @ r.rhs) instr ~equal:(=))
