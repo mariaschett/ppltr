@@ -96,11 +96,21 @@ let generate rn r =
   ]
   |> String.concat ~sep:"\n"
 
-
 let skip_rule r =
-  let instr = Ebso.Instruction.T.ISZERO in
-  List.mem (r.lhs) instr ~equal:(=) ||  (* ([%eq: Ebso.Instruction.T]) *)
-  List.mem (r.rhs) instr ~equal:(=)
+  let instrs = [
+    Ebso.Instruction.T.ISZERO
+  ; Ebso.Instruction.T.MSIZE
+  ; Ebso.Instruction.T.SLT
+  ; Ebso.Instruction.T.SGT
+  ; Ebso.Instruction.T.CALLDATASIZE
+  ; Ebso.Instruction.T.SIGNEXTEND
+  ; Ebso.Instruction.T.ADDMOD
+  ; Ebso.Instruction.T.MULMOD
+  ; Ebso.Instruction.T.GAS
+  ; Ebso.Instruction.T.EXTCODESIZE
+  ]
+  in
+  List.exists instrs ~f:(fun instr -> List.mem (r.lhs @ r.rhs) instr ~equal:(=))
 
 let check_and_generate n r =
   if skip_rule r
