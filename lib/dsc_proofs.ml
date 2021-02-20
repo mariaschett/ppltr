@@ -71,8 +71,33 @@ let generate_inversion_proof rn inv_lhs lhs vars nns =
   ] @ destructs @ [
     "    subst.";
     "    repeat eexists.";
-    "Qed."
+    "Qed.";
+    "" (* for formatting *)
   ]
+  |> String.concat ~sep:"\n"
+
+let generate_one_proof =
+  [
+    "Admitted.";
+  ]
+
+let generate_one rn =
+  [
+    "Lemma " ^ rn ^ "_one : forall ge p po,";
+    " " ^ rn ^ " p = Some po ->";
+    "forall stack stack' stk stk' he he' d d' gas gas',";
+    "    (star (step me cd funcKind)";
+    "         ge";
+    "         (State stack p stk he d gas)";
+    "         (Returnstate stack' stk' he' d' gas'))";
+    "->";
+    "exists gas1',";
+    "  gas1' <= gas' /\\ ";
+    " (star (step me cd funcKind)";
+    "       ge";
+    "       (State stack po stk he d gas)";
+    "       (Returnstate stack' stk' he' d' gas1')).";
+  ] @ generate_one_proof
   |> String.concat ~sep:"\n"
 
 let generate rn r =
@@ -93,6 +118,7 @@ let generate rn r =
     "(* " ^ rn  ^ ": " ^ Rule.show r ^ " *)" ;
     generate_definition rn lhs rhs vn nn;
     generate_inversion_proof rn inv_lhs lhs (Hashtbl.data vn |> List.concat) eqs_nn;
+    generate_one rn;
     "\n";
   ]
   |> String.concat ~sep:"\n"
