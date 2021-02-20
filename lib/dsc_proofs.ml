@@ -76,9 +76,13 @@ let generate_inversion_proof rn inv_lhs lhs vars nns =
   ]
   |> String.concat ~sep:"\n"
 
-let generate_one_proof =
+let generate_one_proof rn =
   [
-    "Admitted.";
+    "Proof.";
+    "intros.";
+    "(* Some setup to find p and po. *)";
+    "assert (H2 := H); apply " ^ rn ^  "_inversion in H2.";
+    "Admitted."
   ]
 
 let generate_one rn =
@@ -97,7 +101,7 @@ let generate_one rn =
     "       ge";
     "       (State stack po stk he d gas)";
     "       (Returnstate stack' stk' he' d' gas1')).";
-  ] @ generate_one_proof
+  ] @ generate_one_proof rn
   |> String.concat ~sep:"\n"
 
 let generate rn r =
