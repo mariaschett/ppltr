@@ -120,22 +120,10 @@ let check_and_generate n r =
   then ""
   else generate n r
 
-(* TODO: should be moved to helper Coq file *)
-let push_eq =
-  "Lemma push_eq_dec (l1 l2 : val + label) : {l1 = l2} + {l1 <> l2}.
-Proof.
-  decide equality.
-  decide equality.
-  apply Int256.eq_dec.
-  decide equality.
-Defined.
-
-"
-
 let write_templates rule_csv fn =
   let rs = Csv.Rows.load ~has_header:true rule_csv in
   let rs = List.map rs ~f:Rule_generator.rule in
   let data = List.foldi ~f:(fun i s r ->
       (* +2 to correspond to line number in csv *)
       s ^ check_and_generate ("rule" ^ [%show: int] (i+2)) r) ~init:"" rs in
-  Out_channel.write_all (fn ^ "Rules.v") ~data:(header^push_eq^data)
+  Out_channel.write_all (fn ^ "Rules.v") ~data:(header^data)
