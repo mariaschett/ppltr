@@ -120,37 +120,6 @@ let check_and_generate n r =
   then ""
   else generate n r
 
-let header =
-  "Require Import Statements.StmtExpressionless.
-Require Import backend.phase.Expressionless.Semantics.
-Require Import backend.phase.Expressionless.MonotoneGas.
-Require Import List.
-
-Require Import backend.Smallstep.
-Require Import backend.MachineModel.
-Require Import backend.MachineModelLow.
-Require Import backend.MemoryModel.
-Require Import backend.AbstractData.
-Require Import backend.Values.HighValues.
-Require Import backend.Values.LowValues.
-Require Import backend.AST.
-
-Require Import Omega.
-
-Require Import cclib.Integers.
-Require Import Cop.
-
-
-Section WITH_DATA.
-  Context adata {data_ops: CompatDataOps adata}.
-  Variable ge: genv.
-
-  Variable me: machine_env adata.
-  Variable cd: list val.
-  Variable funcKind : function_kind.
-
-"
-
 (* TODO: should be moved to helper Coq file *)
 let push_eq =
   "Lemma push_eq_dec (l1 l2 : val + label) : {l1 = l2} + {l1 <> l2}.
@@ -167,5 +136,6 @@ let write_templates rule_csv fn =
   let rs = Csv.Rows.load ~has_header:true rule_csv in
   let rs = List.map rs ~f:Rule_generator.rule in
   let data = List.foldi ~f:(fun i s r ->
-      s ^ check_and_generate ("rule" ^ [%show: int] (i+5)) r) ~init:"" rs in
+      (* +2 to correspond to line number in csv *)
+      s ^ check_and_generate ("rule" ^ [%show: int] (i+2)) r) ~init:"" rs in
   Out_channel.write_all (fn ^ "Rules.v") ~data:(header^push_eq^data)
