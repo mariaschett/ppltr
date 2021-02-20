@@ -50,6 +50,7 @@ let generate_definition rn lhs rhs vn nn  =
     generate_matching_rhs rhs vn nn;
       "  | _ => None";
     "  end.";
+    "" (* for formatting *)
   ]
   |> String.concat ~sep:"\n"
 
