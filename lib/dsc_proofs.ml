@@ -79,20 +79,20 @@ let generate_inversion_proof rn inv_lhs lhs vars nns =
 let generate_one_proof rn =
   [
     "Proof.";
-    "intros.";
+    "intros ge0 p po H stack stack' stk stk' he he' d d' gas gas' Hp.";
     "(* Some setup to find p and po. *)";
     "assert (H2 := H); apply " ^ rn ^  "_inversion in H2.";
     "subst_progr H.";
-    "(* Big chain of inversions for the run H0 *)";
+    "(* Big chain of inversions for the run Hp *)";
     "repeat run_step.";
-    "(* make stack explcit *)";
+    "(* make stack explicit *)";
     "repeat (stack_get_inv || rewrite stack_get_succ in *).";
     "repeat stack_set.";
 
     "(* Reason about gas *)";
     "assert_gas.";
     "Focus 2.";
-    "destruct (gas_monotone _ _ _ Hgas_le H) as [? Hg].";
+    "destruct_gas_monotone.";
     "destruct Hg as [Hstep Hle].";
 
    " eexists; split.";
