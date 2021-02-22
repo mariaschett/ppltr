@@ -82,7 +82,30 @@ let generate_one_proof rn =
     "intros.";
     "(* Some setup to find p and po. *)";
     "assert (H2 := H); apply " ^ rn ^  "_inversion in H2.";
-    "Admitted."
+    "subst_progr H.";
+    "(* Big chain of inversions for the run H0 *)";
+    "repeat run_step.";
+    "(* make stack explcit *)";
+    "repeat (stack_get_inv || rewrite stack_get_succ in *).";
+    "repeat stack_set.";
+
+    "(* Reason about gas *)";
+    "assert_gas.";
+    "Focus 2.";
+    "destruct (gas_monotone _ _ _ Hgas_le H) as [? Hg].";
+    "destruct Hg as [Hstep Hle].";
+
+   " eexists; split.";
+    "Focus 2.";
+
+   " (* Prove the other run. *)";
+    "repeat other_run.";
+    "exact Hstep.";
+    "exact Hle.";
+
+   " (* Using less gas *)";
+    "omega.";
+   "Qed.";
   ]
 
 let generate_one rn =
