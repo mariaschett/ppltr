@@ -104,7 +104,7 @@ let generate_one_proof rn =
     "exact Hle.";
 
    " (* Using less gas *)";
-    "omega.";
+    "gas_decreasing.";
    "Qed.";
   ]
 
