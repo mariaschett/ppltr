@@ -150,8 +150,8 @@ let generate rn r =
   ]
   |> String.concat ~sep:"\n"
 
-let skip_rule r =
-  let instrs = [
+let skip_rule r n =
+  let unavail = [
     Ebso.Instruction.T.ISZERO
   ; Ebso.Instruction.T.MSIZE
   ; Ebso.Instruction.T.SLT
@@ -167,17 +167,27 @@ let skip_rule r =
   ; Ebso.Instruction.T.BYTE
   ]
   in
-  List.exists instrs ~f:(fun instr -> List.mem (r.lhs @ r.rhs) instr ~equal:(=))
+  (* rule numbers to skip *)
+  let ns = [
+    6; (* requires SUB X X = 0 *)
+    10; (* requires XOR commutative *)
+    12; (* requires NOT NOT X = X *)
+    13; (* requires MULT *)
+    15; (* requires ADD 0 X = X *)
+    19; (* requires NOT AND is 0 *)
+  ] in
+  (List.mem ns n ~equal:(=)) ||
+  (List.exists unavail  ~f:(fun instr -> List.mem (r.lhs @ r.rhs) instr ~equal:(=)))
 
-let check_and_generate n r =
-  if skip_rule r
+let check_and_generate i r =
+  if skip_rule r i
   then ""
-  else generate n r
+  else generate ("rule" ^ [%show: int] i) r
 
 let write_templates rule_csv fn =
   let rs = Csv.Rows.load ~has_header:true rule_csv in
   let rs = List.map rs ~f:Rule_generator.rule in
   let data = List.foldi ~f:(fun i s r ->
       (* +2 to correspond to line number in csv *)
-      s ^ check_and_generate ("rule" ^ [%show: int] (i+2)) r) ~init:"" rs in
+      s ^ check_and_generate (i + 2) r) ~init:"" rs in
   Out_channel.write_all (fn ^ "Rules.v") ~data:(header^data)
