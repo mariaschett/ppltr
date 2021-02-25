@@ -44,7 +44,7 @@ let generate_matching_rhs rhs vn nn =
 
 let generate_definition rn lhs rhs vn nn  =
   [
-    "Definition " ^ rn ^ " (p : list statement) : option (list statement) :=";
+    "Definition " ^ rn ^ "_rewrite (p : list statement) : option (list statement) :=";
     "  match p with";
     "  | " ^ lhs ^ " :: tl =>";
     generate_matching_rhs rhs vn nn;
