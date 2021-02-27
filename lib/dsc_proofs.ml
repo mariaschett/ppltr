@@ -203,6 +203,7 @@ let skip_rule r n =
   ] in
   (List.mem ns n ~equal:(=)) ||
   (List.exists unavail  ~f:(fun instr -> List.mem (r.lhs @ r.rhs) instr ~equal:(=))) ||
+  (* to crudely limit the amount of produced rules *)
   (n > 100)
 
 let check_and_generate i r =
