@@ -200,3 +200,5 @@ Section WITH_DATA.
 "
 
 let header = imports ^ disclaimer ^ section_heading
+
+let footer = "End WITH_DATA."

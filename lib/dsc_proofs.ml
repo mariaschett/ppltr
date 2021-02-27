@@ -216,4 +216,4 @@ let write_templates rule_csv fn =
   let data = List.foldi ~f:(fun i s r ->
       (* +2 to correspond to line number in csv *)
       s ^ check_and_generate (i + 2) r) ~init:"" rs in
-  Out_channel.write_all (fn ^ "Rules.v") ~data:(header^data)
+  Out_channel.write_all (fn ^ "Rules.v") ~data:(header^data^footer)
