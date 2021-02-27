@@ -206,15 +206,19 @@ let skip_rule r n =
   (* to crudely limit the amount of produced rules *)
   (n > 100)
 
-let check_and_generate i r =
-  if skip_rule r i
-  then ""
-  else generate ("rule" ^ [%show: int] i) r
+let include_rule i r =
+  (* +2 to correspond to line number in csv *)
+  if not (skip_rule r (i+2))
+  then Some ("rule" ^ [%show: int] (i + 2), r)
+  else None
+
+let rs_list rs' =
+  let rs_list = List.map rs' ~f:(fun (rn, _) -> rn) |> String.concat ~sep:" :: " in
+  "Definition rules := " ^ rs_list ^ " :: nil.\n\n"
 
 let write_templates rule_csv fn =
   let rs = Csv.Rows.load ~has_header:true rule_csv in
   let rs = List.map rs ~f:Rule_generator.rule in
-  let data = List.foldi ~f:(fun i s r ->
-      (* +2 to correspond to line number in csv *)
-      s ^ check_and_generate (i + 2) r) ~init:"" rs in
-  Out_channel.write_all (fn ^ "Rules.v") ~data:(header^data^footer)
+  let rs' = List.filter_mapi rs ~f:include_rule in
+  let data = List.fold ~f:(fun s (rn, r) -> s ^ generate rn r) ~init:"" rs' in
+  Out_channel.write_all (fn ^ "Rules.v") ~data:(header^data^rs_list rs'^footer)
