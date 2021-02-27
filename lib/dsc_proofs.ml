@@ -127,6 +127,9 @@ let generate_one rn =
   ] @ generate_one_proof rn
   |> String.concat ~sep:"\n"
 
+let generate_rule rn =
+  "\nDefinition " ^ rn ^ " : rule := Build_rule adata me cd funcKind " ^ rn ^ "_rewrite " ^ rn ^ "_one."
+
 let generate rn r =
   let vn = Hashtbl.create (module String) in
   let nn = Hashtbl.create (module String) in
@@ -146,6 +149,7 @@ let generate rn r =
     generate_definition rn lhs rhs vn nn;
     generate_inversion_proof rn inv_lhs lhs (Hashtbl.data vn |> List.concat) eqs_nn;
     generate_one rn;
+    generate_rule rn;
     "\n";
   ]
   |> String.concat ~sep:"\n"
