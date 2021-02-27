@@ -58,11 +58,11 @@ let generate_inversion_proof rn inv_lhs lhs vars nns =
   let destructs = List.map ~f:(fun eq -> "    destruct (" ^ eq ^ "); try congruence.") nns in
   [
     "Lemma " ^ rn ^ "_inversion : forall p po,";
-    " " ^ rn ^ " p = Some po -> exists tl " ^ String.concat vars ~sep:" " ^ ",";
+    " " ^ rn ^ "_rewrite p = Some po -> exists tl " ^ String.concat vars ~sep:" " ^ ",";
     " p = " ^ inv_lhs ^ ":: tl.";
     "Proof.";
     "  intros.";
-    "  unfold " ^ rn ^ " in H.";
+    "  unfold " ^ rn ^ "_rewrite in H.";
     "    revert H.";
     "    refine  (match p with";
     "    | " ^ lhs ^ " :: tl => _";
@@ -111,7 +111,7 @@ let generate_one_proof rn =
 let generate_one rn =
   [
     "Lemma " ^ rn ^ "_one : forall ge p po,";
-    " " ^ rn ^ " p = Some po ->";
+    " " ^ rn ^ "_rewrite p = Some po ->";
     "forall stack stack' stk stk' he he' d d' gas gas',";
     "    (star (step me cd funcKind)";
     "         ge";
@@ -175,9 +175,31 @@ let skip_rule r n =
     13; (* requires MULT *)
     15; (* requires ADD 0 X = X *)
     19; (* requires NOT AND is 0 *)
+    28; (* requires LT is inverse of GT *)
+    31; (* requires ADD commutative *)
+    34; (* requires ADD 0 X = X *)
+    35; (* requires NOT NOT X = X *)
+    41; (* requires ADD 0 X = X *)
+    42; (* requires SUB X X = 0 *)
+    44; (* requires NOT NOT X = X *)
+    52; (* requires commutativity of AND or OR *)
+    57; (* requires ADD 0 X = X *)
+    58; (* requires ADD commutative *)
+    61; (* requires ADD commutative *)
+    63; (* requires SUB X X = 0 *)
+    66; (* requires MLOAD from same twice is same *)
+    67; (* requires ADD commutative *)
+    74; (* requires SUB X X = 0 *)
+    83; (* requires NOT AND is 0 *)
+    88; (* requires NOT NOT X = X *)
+    89; (* requires NOT NOT X = X *)
+    91; (* requires NOT NOT X = X *)
+    92; (* requires SUB X X = 0 *)
+    100; (* requires NOT NOT X = X *)
   ] in
   (List.mem ns n ~equal:(=)) ||
-  (List.exists unavail  ~f:(fun instr -> List.mem (r.lhs @ r.rhs) instr ~equal:(=)))
+  (List.exists unavail  ~f:(fun instr -> List.mem (r.lhs @ r.rhs) instr ~equal:(=))) ||
+  (n > 100)
 
 let check_and_generate i r =
   if skip_rule r i
