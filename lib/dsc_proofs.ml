@@ -79,7 +79,7 @@ let generate_inversion_proof rn inv_lhs lhs vars nns =
 let generate_one_proof rn =
   [
     "Proof.";
-    "intros ge0 p po H stack stack' stk stk' he he' d d' gas gas' Hp.";
+    "intros adata me cd funcKind ge0 p po H stack stack' stk stk' he he' d d' gas gas' Hp.";
     "(* Some setup to find p and po. *)";
     "assert (H2 := H); apply " ^ rn ^  "_inversion in H2.";
     "subst_progr H.";
@@ -110,17 +110,17 @@ let generate_one_proof rn =
 
 let generate_one rn =
   [
-    "Lemma " ^ rn ^ "_one : forall ge p po,";
+    "Lemma " ^ rn ^ "_one : forall adata me cd funcKind ge p po,";
     " " ^ rn ^ "_rewrite p = Some po ->";
     "forall stack stack' stk stk' he he' d d' gas gas',";
-    "    (star (step me cd funcKind)";
+    "    (star (@step adata me cd funcKind)";
     "         ge";
     "         (State stack p stk he d gas)";
     "         (Returnstate stack' stk' he' d' gas'))";
     "->";
     "exists gas1',";
     "  gas1' <= gas' /\\ ";
-    " (star (step me cd funcKind)";
+    " (star (@step adata me cd funcKind)";
     "       ge";
     "       (State stack po stk he d gas)";
     "       (Returnstate stack' stk' he' d' gas1')).";
@@ -128,7 +128,7 @@ let generate_one rn =
   |> String.concat ~sep:"\n"
 
 let generate_rule rn =
-  "\nDefinition " ^ rn ^ " : rule := Build_rule adata me cd funcKind " ^ rn ^ "_rewrite " ^ rn ^ "_one."
+  "\nDefinition " ^ rn ^ " : rule := Build_rule " ^ rn ^ "_rewrite " ^ rn ^ "_one."
 
 let generate rn r =
   let vn = Hashtbl.create (module String) in

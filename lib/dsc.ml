@@ -187,18 +187,8 @@ let disclaimer =
 
 "
 
-let section_heading =
-"
-Section WITH_DATA.
-  Context adata {data_ops: CompatDataOps adata}.
-  Variable ge: genv.
-
-  Variable me: machine_env adata.
-  Variable cd: list val.
-  Variable funcKind : function_kind.
-
-"
+let section_heading = ""
 
 let header = imports ^ disclaimer ^ section_heading
 
-let footer = "End WITH_DATA."
+let footer = ""
